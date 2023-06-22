@@ -70,7 +70,7 @@ int main(void)
 		printf("\nchosen: %d\tchanged: %c\nunchosen: %d\tlast input: %c\nuseless: %d\n\n", stack[curr].chosen, changed, stack[curr].unchosen,input, stack[curr].useless);
 		printf("| chosen: q(j)| unchosen: w(k)| useless: e(l)|\n| reset: o | quit: p | (char in \"( )\" is for sub)\n");
 		printf("| change class: g | make new class: h |\n");
-		printf("| delete class: b | show list: n |\n\nÀÔ·Â: ");
+		printf("| delete class: b | show list: n |\n\ninput: ");
 		input = _getche();
 		switch (input)
 		{
@@ -238,6 +238,7 @@ int main(void)
 	fprintf(file, "unchosen: %d\n", total.unchosen);
 	fprintf(file, "useless: %d\n", total.useless);
 	fprintf(file, "(chosen) ratio: %f%%\n", 100 * ((float)total.chosen / (float)(total.chosen + total.unchosen + total.useless)));
+	fprintf(file, "missed image: %d\n", 1145 - (total.chosen + total.unchosen + total.useless));
 	fprintf(file, "\n");
 
 	for (i = 0; i < cnt; i++) {
