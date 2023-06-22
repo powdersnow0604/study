@@ -23,7 +23,7 @@ int temp, cnt = 0, curr = 0, size = 50;
 char buf[32];
 #pragma endregion
 
-char path[260] = "C:\\Users\\darak\\OneDrive\\Desktop\\2023_하계방학_스터디\\static.txt";   //change here for own path
+char path[260] = "C:\\Users\\darak\\OneDrive\\Desktop\\2023_하계방학_스터디\\statistics.txt";   //change here for own path
 
 
 int main(void)
