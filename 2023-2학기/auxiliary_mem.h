@@ -3,6 +3,7 @@
 
 /*								summary								*/	
 // auxmem_size: < 1/4: kernel,	1/4 <=  < 2/4: filesystem,	2/4 <= <= 4/4: global
+// filesystem section contains i_nodes and i_node pointers
 // addr is  8 bytes
 //kernel
 //	0 ~ 7: root_directory addr
@@ -47,11 +48,16 @@ extern size_t directory_size;
 
 extern const MEMBLOCK root_directory_addr_ptr; //where root_directory addr place
 
+
 //functions
 int loadAuxmem();
 
 int changeAuxmemPath(const char* path);
 
 MEMBLOCK mmtInsert(size_t size, int mode);
+
+int mmtDelete(MEMBLOCK start, size_t size);
+
+void storeAuxmem(void);
 
 #endif

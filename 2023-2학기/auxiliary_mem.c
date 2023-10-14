@@ -1,22 +1,22 @@
 #include "auxiliary_mem.h"
 #include <stdio.h>
 #include <string.h>
+#include "Utils.h"
 
 //variables
 AUXMEM auxmem;
 
 MMT mmt;
 
-const char* auxmem_path = "C:\\Users\\User\\Desktop\\C derived\\data\\auxmem_backup";
+const char* auxmem_path = "C:\\Users\\darak\\OneDrive\\Desktop\\C Derived\\c\\data";
 
 const size_t auxmem_size = 8000000;
 
 const size_t init_mmt_node_num = 10;
 
-size_t directory_size = sizeof(size_t[3]) + sizeof(int);
+size_t directory_size = sizeof(size_t[4]) + sizeof(int);
 
-const MEMBLOCK root_directory_addr_ptr = 0; //where root_directory addr place
-
+const MEMBLOCK root_directory_addr_ptr = 0llu; //where root_directory addr place
 
 
 //declaration
@@ -48,6 +48,17 @@ int loadAuxmem()
 			return 0;
 		}
 	}
+}
+
+void storeAuxmem(void)
+{
+	FILE* file;
+	fopen_s(&file, auxmem_path, "wb");
+	if (file == NULL) return;
+
+	fwrite(auxmem, 1, auxmem_size, file);
+
+	fclose(file);
 }
 
 int changeAuxmemPath(const char* path)
@@ -82,15 +93,18 @@ void init_mem()
 
 	MEMBLOCK root_name_addr = mmtInsert(sizeof("root"), 2);
 
+	MEMBLOCK root_dir_node_ptr_array_addr = mmtInsert(10 * sizeof(MEMBLOCK), 1);
+
 	strcpy_s(auxmem + root_name_addr,sizeof("root"), "root");
 	
-	*((size_t*)(auxmem + root_directory_addr_ptr)) = root_directory_addr;
+	*c_AT(root_directory_addr_ptr,MEMBLOCK*) = root_directory_addr;
 
 
-	*((int*)(auxmem + root_directory_addr)) = 0; //root dir type == dir
-	*((MEMBLOCK*)(auxmem + root_directory_addr + sizeof(int))) = root_name_addr; //root dir name ptr
-	*((MEMBLOCK*)(auxmem + root_directory_addr + sizeof(int) + sizeof(MEMBLOCK))) = 0; //root dir size
-	*((MEMBLOCK*)(auxmem + root_directory_addr + sizeof(int) + sizeof(MEMBLOCK) * 2)) = 0; //root dir node ptr
+	*c_AT(root_directory_addr, MEMBLOCK*) = root_name_addr; //root dir name ptr
+	*c_AT(root_directory_addr + sizeof(MEMBLOCK), MEMBLOCK*) = 0llu; //root dir num
+	*c_AT(root_directory_addr + sizeof(MEMBLOCK) * 2, MEMBLOCK*) = 10llu; //root dir capacity
+	*c_AT(root_directory_addr + sizeof(MEMBLOCK) * 3, MEMBLOCK*) = root_dir_node_ptr_array_addr; //root dir node ptr
+	*c_AT(root_directory_addr + sizeof(MEMBLOCK) * 4, int*) = 0; //root dir type == dir
 }
 
 MEMBLOCK mmtInsert(size_t size, int mode)
@@ -106,7 +120,6 @@ MEMBLOCK mmtInsert(size_t size, int mode)
 	}
 
 	size_t i, temp = auxmem_size * 2 / 4;
-
 	
 	switch (mode)
 	{
@@ -150,7 +163,7 @@ MEMBLOCK mmtInsert(size_t size, int mode)
 			}
 		}
 
-		if ((mmt.nodes[mmt.node_num - 1].e + size) <= auxmem_size) {
+		if ((mmt.nodes[mmt.node_num - 1].e + size) < auxmem_size) {
 			temp = mmt.nodes[mmt.node_num - 1].e + 1;
 			mmt.nodes[mmt.node_num - 1].e += size;
 		}
@@ -159,3 +172,27 @@ MEMBLOCK mmtInsert(size_t size, int mode)
 	}
 	
 }
+
+int mmtDelete(MEMBLOCK start, size_t size)
+{
+	size_t i;
+	for (i = 0; i < mmt.node_num; ++i) {
+		if (mmt.nodes[i].s <= start && start <= mmt.nodes[i].e) {
+			if (mmt.nodes[i].s == start && start == mmt.nodes[i].e) {
+				
+			}
+
+			if (mmt.capacity == mmt.node_num) {
+				mmt.capacity *= 2;
+				mmt.nodes = (mmt_node*)realloc(mmt.nodes, mmt.capacity);
+				if (mmt.nodes == NULL) return 0;
+			}
+
+
+		}
+	}
+
+	return -1;
+}
+
+

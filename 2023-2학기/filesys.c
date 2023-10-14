@@ -1,25 +1,75 @@
 #include "filesys.h"
 #include <string.h>
 #include <stdio.h>
+#include "Utils.h"
+
 
 //variables
 
-CURRENT_DIR curr_dir;
+CURRENT_DIR curr_dir_path;
+
+i_node* curr_dir;
 
 i_node* root_dir;
 
-const size_t PATH_MAX = 512;
+const size_t PATH_MAX = 260;
+
+const size_t init_dir_member_num = 10;
+
 
 //definition
 void init_filesystem(void)
 {
-	strcpy_s(curr_dir, PATH_MAX, "/");
-	root_dir = (i_node*)(auxmem + *((size_t*)(auxmem + root_directory_addr_ptr)));
+	strcpy_s(curr_dir_path, PATH_MAX, "/");
+	root_dir = c_AT(*c_AT(root_directory_addr_ptr, MEMBLOCK*), i_node*);
+	curr_dir = root_dir;
 }
 
+void dirInsert(i_node* parent_dir, MEMBLOCK child_node, int type, MEMBLOCK name, size_t num, size_t capacity, MEMBLOCK addr)
+{
+	if (parent_dir->num == parent_dir->capacity) {
+		parent_dir->capacity *= 2;
+		MEMBLOCK naddr = mmtInsert(parent_dir->capacity * sizeof(MEMBLOCK), 1);
+		memcpy(AT(naddr), AT(parent_dir->addr), sizeof(MEMBLOCK) * parent_dir->num);
+		parent_dir->addr = naddr;
+	}
+
+	*(c_AT(parent_dir->addr, MEMBLOCK*) + parent_dir->num) = child_node;
+	i_node* nnode = c_AT(child_node, i_node*);
+	nnode->type = type;
+	nnode->name = name;
+	nnode->num = num;
+	nnode->capacity = capacity;
+	nnode->addr = addr;
+
+	++(parent_dir->num);
+}
+
+i_node* dirSearch(i_node* dir, MEMBLOCK name)
+{
+	MEMBLOCK* nptr = c_AT(dir->addr, MEMBLOCK*);
+	for (size_t i = 0; i < dir->num; ++i, ++nptr) {
+		if (!strcmp(AT(name), AT(c_AT(*nptr, i_node*)->name))) return c_AT(*nptr, i_node*);
+	}
+
+	return NULL;
+}
+
+i_node* dirSearchWithChar(i_node* dir, const char* name)
+{
+	MEMBLOCK* nptr = c_AT(dir->addr, MEMBLOCK*);
+	for (size_t i = 0; i < dir->num; ++i, ++nptr) {
+		if (!strcmp(name, AT(c_AT(*nptr, i_node*)->name))) return c_AT(*nptr, i_node*);
+	}
+
+	return NULL;
+}
+
+
+//instructions
 void cat(const char* arg)
 {
-	char* saveptr = arg;
+	const char* saveptr = arg;
 	char* token;
 	char buf[256] = "";
 
@@ -34,31 +84,33 @@ void cat(const char* arg)
 			MEMBLOCK str_addr = mmtInsert(strlen(buf) + 1, 2);
 			MEMBLOCK name_addr = mmtInsert(strlen(token) + 1, 2);
 
-			strcpy_s(auxmem + str_addr, strlen(buf)+1, buf);
-			strcpy_s(auxmem + name_addr, strlen(token)+1, token);
+			strcpy_s(AT(str_addr), strlen(buf) + 1, buf);
+			strcpy_s(AT(name_addr), strlen(token) + 1, token);
 
-			i_node* nnode = (i_node*)(auxmem + node_addr);
-			nnode->addr = str_addr;
-			nnode->size = strlen(buf) + 1;
-			nnode->type = 1;
-			nnode->name = name_addr;
-
-			root_dir->addr = node_addr;
+			dirInsert(curr_dir, node_addr, 1, name_addr, 0, 0, str_addr);
 
 			break;
 		}
 		else {
-			i_node* fnode = (i_node*)(auxmem + root_dir->addr);
-			char* name = (char*)(auxmem + fnode->name);
-			char* str = (char*)(auxmem + fnode->addr);
-			if (!strcmp(name, token)) {
-				printf("%s\n", str);
+			i_node* target = dirSearchWithChar(curr_dir, token);
+			if ((target != NULL) && (!strcmp(c_AT(target->name, char*), token))) {
+				printf("%s\n", c_AT(target->addr, char*));
 			}
-			else{
+			else {
 				printf("'%s' is not a filename\n", token);
 			}
 
 			break;
 		}
 	}
+}
+
+void ls(void)
+{
+	MEMBLOCK* nptr = c_AT(curr_dir->addr, MEMBLOCK*);
+	for (size_t i = 0; i < curr_dir->num; ++i, ++nptr) {
+		printf("%s ", AT(c_AT(*nptr, i_node*)->name));
+	}
+
+	puts("");
 }
