@@ -93,7 +93,7 @@ void init_mem()
 
 	MEMBLOCK root_name_addr = mmtInsert(sizeof("root"), 2);
 
-	MEMBLOCK root_dir_node_ptr_array_addr = mmtInsert(10 * sizeof(MEMBLOCK), 1);
+	MEMBLOCK root_dir_node_ptr_array_addr = mmtInsert(init_dir_member_num * sizeof(MEMBLOCK), 1);
 
 	strcpy_s(auxmem + root_name_addr,sizeof("root"), "root");
 	
@@ -177,18 +177,44 @@ int mmtDelete(MEMBLOCK start, size_t size)
 {
 	size_t i;
 	for (i = 0; i < mmt.node_num; ++i) {
-		if (mmt.nodes[i].s <= start && start <= mmt.nodes[i].e) {
-			if (mmt.nodes[i].s == start && start == mmt.nodes[i].e) {
-				
+		
+		if (mmt.nodes[i].s == start && start == mmt.nodes[i].e) {
+			for (size_t j = i; j < mmt.node_num-1; ++j) {
+				mmt.nodes[i] = mmt.nodes[i + 1];
 			}
 
+			--(mmt.node_num);
+
+			return 0;
+		}
+		else if (mmt.nodes[i].s == start && start < mmt.nodes[i].e) {
+			mmt.nodes[i].s += size;
+
+			return 0;
+		}
+		else if (mmt.nodes[i].s < start && start == mmt.nodes[i].e) {
+			mmt.nodes[i].e -= size;
+
+			return 0;
+		}
+		else if (mmt.nodes[i].s < start && start < mmt.nodes[i].e)
+		{
 			if (mmt.capacity == mmt.node_num) {
 				mmt.capacity *= 2;
 				mmt.nodes = (mmt_node*)realloc(mmt.nodes, mmt.capacity);
-				if (mmt.nodes == NULL) return 0;
+				if (mmt.nodes == NULL) return -1;
 			}
 
+			for (size_t j = mmt.node_num; j > i; --j) {
+				mmt.nodes[j] = mmt.nodes[j-1];
+			}
 
+			++(mmt.node_num);
+
+			mmt.nodes[i + 1].s = start + size;
+			mmt.nodes[i].e = start - 1;
+
+			return 0;
 		}
 	}
 

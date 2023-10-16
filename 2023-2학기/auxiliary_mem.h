@@ -48,6 +48,8 @@ extern size_t directory_size;
 
 extern const MEMBLOCK root_directory_addr_ptr; //where root_directory addr place
 
+extern const size_t init_dir_member_num;
+
 
 //functions
 int loadAuxmem();
